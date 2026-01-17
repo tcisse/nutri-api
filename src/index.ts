@@ -38,8 +38,8 @@ app.listen(PORT, () => {
 ║                                                       ║
 ║   🥗 NUTRI API - Serveur démarré                      ║
 ║                                                       ║
-║   URL: http://localhost:${PORT}                         ║
-║   Env: ${process.env.NODE_ENV || "development"}                              ║
+║   URL: http://localhost:${PORT}                          ║
+║   Env: ${process.env.NODE_ENV || "development"}                                    ║
 ║                                                       ║
 ║   Endpoints disponibles:                              ║
 ║   • GET  /health           - Santé du serveur         ║
