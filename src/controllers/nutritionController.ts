@@ -43,7 +43,7 @@ export const calculateHandler = async (
       ...result,
       descriptions: {
         activity: getActivityDescription(userInput.activity),
-        goal: getGoalDescription(userInput.goal),
+        goal: getGoalDescription(userInput.goal, userInput.rate),
       },
     };
 

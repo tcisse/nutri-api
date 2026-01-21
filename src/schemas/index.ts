@@ -36,7 +36,20 @@ export const userInputSchema = z.object({
   goal: z.enum(["lose", "maintain", "gain"], {
     errorMap: () => ({ message: "L'objectif doit être 'lose', 'maintain' ou 'gain'" }),
   }),
-});
+
+  rate: z
+    .enum(["0.5", "1", "1.5", "2"], {
+      errorMap: () => ({ message: "Le rythme doit être '0.5', '1', '1.5' ou '2'" }),
+    })
+    .optional()
+    .describe("Rythme de perte/prise en kg/semaine (requis si goal != maintain)"),
+}).refine(
+  (data) => data.goal === "maintain" || data.rate !== undefined,
+  {
+    message: "Le rythme (rate) est requis pour les objectifs de perte ou prise de poids",
+    path: ["rate"],
+  }
+);
 
 /**
  * Schéma pour le budget portions (génération de menu)

@@ -1,4 +1,5 @@
-import type { ActivityLevel, CalorieResult, Goal, UserInput } from "../types/index.js";
+import type { ActivityLevel, CalorieResult, Goal, UserInput, WeightChangeRate } from "../types/index.js";
+import { RATE_DAILY_ADJUSTMENT } from "../types/index.js";
 import { getPortionBudget } from "../constants/portionRules.js";
 
 /**
@@ -14,12 +15,20 @@ const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
 };
 
 /**
- * Ajustement calorique selon l'objectif
+ * Calcule l'ajustement calorique basé sur le rythme choisi
+ * Pour perte: déficit (négatif), pour prise: surplus (positif)
  */
-const GOAL_ADJUSTMENTS: Record<Goal, number> = {
-  lose: -300, // Déficit calorique pour perte de poids
-  maintain: 0, // Maintien du poids
-  gain: 300, // Surplus calorique pour prise de masse
+const getCalorieAdjustment = (goal: Goal, rate?: WeightChangeRate): number => {
+  if (goal === "maintain") {
+    return 0;
+  }
+
+  // Utiliser le rate fourni ou défaut à 1 kg/semaine
+  const selectedRate = rate || "1";
+  const adjustment = RATE_DAILY_ADJUSTMENT[selectedRate];
+
+  // Négatif pour perte, positif pour prise
+  return goal === "lose" ? -adjustment : adjustment;
 };
 
 /**
@@ -59,7 +68,7 @@ const roundToNearestHundred = (calories: number): number => {
  * Reçoit les données utilisateur et retourne le plan complet
  */
 export const calculateCalories = (input: UserInput): CalorieResult => {
-  const { age, weight, height, gender, activity, goal } = input;
+  const { age, weight, height, gender, activity, goal, rate } = input;
 
   // 1. Calcul du BMR (métabolisme de base)
   const bmr = calculateBMR(weight, height, age, gender);
@@ -67,8 +76,9 @@ export const calculateCalories = (input: UserInput): CalorieResult => {
   // 2. Calcul du TDEE (dépense énergétique totale)
   const tdee = calculateTDEE(bmr, activity);
 
-  // 3. Application de l'ajustement selon l'objectif
-  const targetCalories = tdee + GOAL_ADJUSTMENTS[goal];
+  // 3. Application de l'ajustement selon l'objectif ET le rythme choisi
+  const adjustment = getCalorieAdjustment(goal, rate);
+  const targetCalories = tdee + adjustment;
 
   // 4. Arrondi à la centaine la plus proche (CRITIQUE)
   const roundedCalories = roundToNearestHundred(targetCalories);
@@ -103,12 +113,17 @@ export const getActivityDescription = (activity: ActivityLevel): string => {
 /**
  * Obtient la description textuelle de l'objectif
  */
-export const getGoalDescription = (goal: Goal): string => {
-  const descriptions: Record<Goal, string> = {
-    lose: "Perte de poids (-300 kcal/jour)",
-    maintain: "Maintien du poids",
-    gain: "Prise de masse (+300 kcal/jour)",
-  };
+export const getGoalDescription = (goal: Goal, rate?: WeightChangeRate): string => {
+  if (goal === "maintain") {
+    return "Maintien du poids";
+  }
 
-  return descriptions[goal];
+  const selectedRate = rate || "1";
+  const adjustment = RATE_DAILY_ADJUSTMENT[selectedRate];
+
+  if (goal === "lose") {
+    return `Perte de poids (${selectedRate} kg/sem, -${adjustment} kcal/jour)`;
+  }
+
+  return `Prise de masse (${selectedRate} kg/sem, +${adjustment} kcal/jour)`;
 };

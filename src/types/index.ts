@@ -10,6 +10,20 @@ export type ActivityLevel =
 
 export type Goal = "lose" | "maintain" | "gain";
 
+// Rythme de perte/prise de poids (kg par semaine)
+export type WeightChangeRate = "0.5" | "1" | "1.5" | "2";
+
+// 1 kg de graisse ≈ 7700 kcal
+export const KCAL_PER_KG = 7700;
+
+// Déficit/surplus journalier par rythme
+export const RATE_DAILY_ADJUSTMENT: Record<WeightChangeRate, number> = {
+  "0.5": Math.round((0.5 * 7700) / 7), // ~550 kcal/jour
+  "1": Math.round((1 * 7700) / 7),     // ~1100 kcal/jour
+  "1.5": Math.round((1.5 * 7700) / 7), // ~1650 kcal/jour
+  "2": Math.round((2 * 7700) / 7),     // ~2200 kcal/jour
+};
+
 export interface UserInput {
   age: number;
   weight: number; // en kg
@@ -17,6 +31,7 @@ export interface UserInput {
   gender: Gender;
   activity: ActivityLevel;
   goal: Goal;
+  rate?: WeightChangeRate; // Rythme de perte/prise (requis si goal != maintain)
 }
 
 // Types pour les portions et groupes alimentaires
