@@ -4,6 +4,8 @@ import {
   generateMenuHandler,
   generateWeeklyMenuHandler,
   regenerateDayHandler,
+  generateMonthlyMenuHandler,
+  regenerateMonthDayHandler,
   infoHandler,
 } from "../controllers/nutritionController.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
@@ -12,6 +14,8 @@ import {
   generateMenuSchema,
   generateWeeklyMenuSchema,
   regenerateDaySchema,
+  generateMonthlyMenuSchema,
+  regenerateMonthDaySchema,
 } from "../schemas/index.js";
 
 const router = Router();
@@ -77,6 +81,12 @@ router.post("/generate-menu", validateRequest(generateMenuSchema), generateMenuH
 router.post("/generate-weekly-menu", validateRequest(generateWeeklyMenuSchema), generateWeeklyMenuHandler);
 
 /**
+ * POST /api/generate-monthly-menu
+ * Génère un menu mensuel (jusqu'à 31 jours) basé sur le budget portions
+ */
+router.post("/generate-monthly-menu", validateRequest(generateMonthlyMenuSchema), generateMonthlyMenuHandler);
+
+/**
  * POST /api/regenerate-day
  * Régénère un jour spécifique du menu hebdomadaire
  *
@@ -95,5 +105,11 @@ router.post("/generate-weekly-menu", validateRequest(generateWeeklyMenuSchema), 
  * }
  */
 router.post("/regenerate-day", validateRequest(regenerateDaySchema), regenerateDayHandler);
+
+/**
+ * POST /api/regenerate-month-day
+ * Régénère un jour spécifique du menu mensuel
+ */
+router.post("/regenerate-month-day", validateRequest(regenerateMonthDaySchema), regenerateMonthDayHandler);
 
 export default router;

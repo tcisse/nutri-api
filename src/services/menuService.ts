@@ -1,6 +1,23 @@
-import type { DailyMenu, DayOfWeek, Food, FoodGroup, Meal, MealItem, MealPortion, MealType, PortionBudget, WeeklyMenu, WeeklyMenuSummary } from "../types/index.js";
+import type {
+  DailyMenu,
+  DayOfMonth,
+  DayOfWeek,
+  Food,
+  FoodGroup,
+  Meal,
+  MealItem,
+  MealPortion,
+  MealType,
+  MonthlyMenu,
+  MonthlyMenuSummary,
+  PortionBudget,
+  WeeklyMenu,
+  WeeklyMenuSummary,
+} from "../types/index.js";
 import { dispatchPortions } from "../constants/dispatchPriority.js";
 import { getRandomFoodByGroup } from "../constants/foodDatabase.js";
+
+const DEFAULT_MONTH_DAYS = 30;
 
 /**
  * Noms des repas en français
@@ -382,6 +399,78 @@ export const calculateWeeklyMenuSummary = (weeklyMenu: WeeklyMenu, portionBudget
  */
 export const regenerateDay = (
   day: DayOfWeek,
+  portionBudget: PortionBudget,
+  preferredRegion?: string
+): DailyMenu => {
+  return generateDailyMenu(portionBudget, preferredRegion);
+};
+
+/**
+ * Génère un menu mensuel complet (par défaut 30 jours)
+ */
+export const generateMonthlyMenu = (
+  portionBudget: PortionBudget,
+  preferredRegion?: string,
+  days: number = DEFAULT_MONTH_DAYS
+): MonthlyMenu => {
+  const monthlyMenu: Partial<MonthlyMenu> = {};
+  const totalDays = Math.max(1, Math.min(31, days));
+
+  for (let day = 1; day <= totalDays; day++) {
+    monthlyMenu[day as DayOfMonth] = generateDailyMenu(portionBudget, preferredRegion);
+  }
+
+  return monthlyMenu as MonthlyMenu;
+};
+
+/**
+ * Formate un menu mensuel pour l'affichage
+ */
+export const formatMonthlyMenuForDisplay = (monthlyMenu: MonthlyMenu): object => {
+  const formatted: Record<string, object> = {};
+  const dayKeys = Object.keys(monthlyMenu)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  for (const day of dayKeys) {
+    formatted[day] = {
+      jour: `Jour ${day}`,
+      ...formatMenuForDisplay(monthlyMenu[day as DayOfMonth]),
+    };
+  }
+
+  return formatted;
+};
+
+/**
+ * Calcule le résumé d'un menu mensuel
+ */
+export const calculateMonthlyMenuSummary = (
+  monthlyMenu: MonthlyMenu,
+  portionBudget: PortionBudget
+): MonthlyMenuSummary => {
+  const dayKeys = Object.keys(monthlyMenu).map(Number);
+  const daysGenerated = dayKeys.length;
+  let totalFoods = 0;
+
+  for (const day of dayKeys) {
+    const dailyMenu = monthlyMenu[day as DayOfMonth];
+    const meals = [dailyMenu.breakfast, dailyMenu.lunch, dailyMenu.dinner, dailyMenu.snack];
+    totalFoods += meals.reduce((acc, meal) => acc + meal.items.length, 0);
+  }
+
+  return {
+    totalPortionsPerDay: portionBudget,
+    totalFoodsPerDay: daysGenerated > 0 ? Math.round(totalFoods / daysGenerated) : 0,
+    daysGenerated,
+  };
+};
+
+/**
+ * Régénère un jour spécifique du menu mensuel
+ */
+export const regenerateMonthDay = (
+  _day: DayOfMonth,
   portionBudget: PortionBudget,
   preferredRegion?: string
 ): DailyMenu => {

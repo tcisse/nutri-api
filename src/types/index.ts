@@ -1,14 +1,27 @@
-// Types pour l'utilisateur et les calculs
 export type Gender = "male" | "female";
 
 export type ActivityLevel =
-  | "sedentary" // Sédentaire (peu ou pas d'exercice)
-  | "light" // Légèrement actif (exercice léger 1-3 jours/semaine)
-  | "moderate" // Modérément actif (exercice modéré 3-5 jours/semaine)
-  | "active" // Très actif (exercice intense 6-7 jours/semaine)
-  | "extra_active"; // Extrêmement actif (exercice très intense, travail physique)
+  | "sedentary"
+  | "light"
+  | "moderate"
+  | "active"
+  | "extra_active";
 
 export type Goal = "lose" | "maintain" | "gain";
+
+export type WeightChangeRate = "0.5" | "1" | "1.5" | "2";
+
+export const RATE_DAILY_ADJUSTMENT: Record<WeightChangeRate, number> = {
+  "0.5": 500, 
+  "1": 1000,   
+  "1.5": 1500, 
+  "2": 2000,   
+};
+
+export const MIN_CALORIES: Record<"male" | "female", number> = {
+  male: 1500,
+  female: 1200,
+};
 
 export interface UserInput {
   age: number;
@@ -17,9 +30,9 @@ export interface UserInput {
   gender: Gender;
   activity: ActivityLevel;
   goal: Goal;
+  rate?: WeightChangeRate;
 }
 
-// Types pour les portions et groupes alimentaires
 export type FoodGroup = "starch" | "fruit" | "milk" | "veg" | "protein" | "fat";
 
 export interface PortionBudget {
@@ -85,6 +98,17 @@ export interface WeeklyMenu {
 }
 
 export interface WeeklyMenuSummary {
+  totalPortionsPerDay: PortionBudget;
+  totalFoodsPerDay: number;
+  daysGenerated: number;
+}
+
+// Types pour le menu mensuel
+export type DayOfMonth = number; // Validé côté schéma (1-31)
+
+export type MonthlyMenu = Record<DayOfMonth, DailyMenu>;
+
+export interface MonthlyMenuSummary {
   totalPortionsPerDay: PortionBudget;
   totalFoodsPerDay: number;
   daysGenerated: number;

@@ -36,7 +36,20 @@ export const userInputSchema = z.object({
   goal: z.enum(["lose", "maintain", "gain"], {
     errorMap: () => ({ message: "L'objectif doit être 'lose', 'maintain' ou 'gain'" }),
   }),
-});
+
+  rate: z
+    .enum(["0.5", "1", "1.5", "2"], {
+      errorMap: () => ({ message: "Le rythme doit être '0.5', '1', '1.5' ou '2'" }),
+    })
+    .optional()
+    .describe("Rythme de perte/prise en kg/semaine (requis si goal != maintain)"),
+}).refine(
+  (data) => data.goal === "maintain" || data.rate !== undefined,
+  {
+    message: "Le rythme (rate) est requis pour les objectifs de perte ou prise de poids",
+    path: ["rate"],
+  }
+);
 
 /**
  * Schéma pour le budget portions (génération de menu)
@@ -73,12 +86,43 @@ export const generateWeeklyMenuSchema = z.object({
 });
 
 /**
+ * Schéma pour la requête de génération de menu mensuel
+ */
+export const generateMonthlyMenuSchema = z.object({
+  portionBudget: portionBudgetSchema,
+  preferredRegion: z
+    .string()
+    .optional()
+    .describe("Tag de région préférée (senegal, benin, mali, etc.)"),
+  days: z
+    .number()
+    .int()
+    .min(1)
+    .max(31)
+    .optional()
+    .describe("Nombre de jours à générer (défaut: 30)"),
+});
+
+/**
  * Schéma pour régénérer un jour spécifique
  */
 export const regenerateDaySchema = z.object({
   day: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], {
     errorMap: () => ({ message: "Le jour doit être un jour valide de la semaine (en anglais)" }),
   }),
+  portionBudget: portionBudgetSchema,
+  preferredRegion: z.string().optional(),
+});
+
+/**
+ * Schéma pour régénérer un jour spécifique du menu mensuel
+ */
+export const regenerateMonthDaySchema = z.object({
+  day: z
+    .number()
+    .int("Le jour doit être un entier")
+    .min(1, "Le jour minimum est 1")
+    .max(31, "Le jour maximum est 31"),
   portionBudget: portionBudgetSchema,
   preferredRegion: z.string().optional(),
 });
@@ -91,3 +135,5 @@ export type PortionBudgetSchema = z.infer<typeof portionBudgetSchema>;
 export type GenerateMenuSchema = z.infer<typeof generateMenuSchema>;
 export type GenerateWeeklyMenuSchema = z.infer<typeof generateWeeklyMenuSchema>;
 export type RegenerateDaySchema = z.infer<typeof regenerateDaySchema>;
+export type GenerateMonthlyMenuSchema = z.infer<typeof generateMonthlyMenuSchema>;
+export type RegenerateMonthDaySchema = z.infer<typeof regenerateMonthDaySchema>;
