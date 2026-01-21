@@ -1,6 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
-import type { UserInputSchema, GenerateMenuSchema, GenerateWeeklyMenuSchema, RegenerateDaySchema } from "../schemas/index.js";
-import type { ApiResponse, CalorieResult, DayOfWeek } from "../types/index.js";
+import type {
+  UserInputSchema,
+  GenerateMenuSchema,
+  GenerateWeeklyMenuSchema,
+  RegenerateDaySchema,
+  GenerateMonthlyMenuSchema,
+  RegenerateMonthDaySchema,
+} from "../schemas/index.js";
+import type { ApiResponse, CalorieResult, DayOfMonth, DayOfWeek } from "../types/index.js";
 import { calculateCalories, getActivityDescription, getGoalDescription } from "../services/calorieService.js";
 import {
   generateDailyMenu,
@@ -10,6 +17,10 @@ import {
   formatWeeklyMenuForDisplay,
   calculateWeeklyMenuSummary,
   regenerateDay,
+  generateMonthlyMenu,
+  formatMonthlyMenuForDisplay,
+  calculateMonthlyMenuSummary,
+  regenerateMonthDay,
 } from "../services/menuService.js";
 
 /**
@@ -114,6 +125,35 @@ export const generateWeeklyMenuHandler = async (
 };
 
 /**
+ * Controller pour la génération de menu mensuel
+ * POST /api/generate-monthly-menu
+ */
+export const generateMonthlyMenuHandler = async (
+  req: Request<object, object, GenerateMonthlyMenuSchema>,
+  res: Response<ApiResponse<object>>,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { portionBudget, preferredRegion, days } = req.body;
+
+    const monthlyMenu = generateMonthlyMenu(portionBudget, preferredRegion, days);
+    const formattedMenu = formatMonthlyMenuForDisplay(monthlyMenu);
+    const summary = calculateMonthlyMenuSummary(monthlyMenu, portionBudget);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        monthlyMenu: formattedMenu,
+        summary,
+        region: preferredRegion || "general",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Controller pour régénérer un jour spécifique
  * POST /api/regenerate-day
  */
@@ -129,6 +169,34 @@ export const regenerateDayHandler = async (
     const dailyMenu = regenerateDay(day as DayOfWeek, portionBudget, preferredRegion);
 
     // Formatage pour l'affichage
+    const formattedMenu = formatMenuForDisplay(dailyMenu);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        day,
+        menu: formattedMenu,
+        region: preferredRegion || "general",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller pour régénérer un jour spécifique du menu mensuel
+ * POST /api/regenerate-month-day
+ */
+export const regenerateMonthDayHandler = async (
+  req: Request<object, object, RegenerateMonthDaySchema>,
+  res: Response<ApiResponse<object>>,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { day, portionBudget, preferredRegion } = req.body;
+
+    const dailyMenu = regenerateMonthDay(day as DayOfMonth, portionBudget, preferredRegion);
     const formattedMenu = formatMenuForDisplay(dailyMenu);
 
     res.status(200).json({
@@ -163,7 +231,9 @@ export const infoHandler = async (
         "POST /api/calculate": "Calcule les besoins caloriques et le budget portions",
         "POST /api/generate-menu": "Génère un menu journalier basé sur le budget portions",
         "POST /api/generate-weekly-menu": "Génère un menu hebdomadaire (7 jours)",
+        "POST /api/generate-monthly-menu": "Génère un menu mensuel (jusqu'à 31 jours)",
         "POST /api/regenerate-day": "Régénère un jour spécifique du menu",
+        "POST /api/regenerate-month-day": "Régénère un jour spécifique du menu mensuel",
         "GET /api/info": "Informations sur l'API",
       },
       supported_regions: [

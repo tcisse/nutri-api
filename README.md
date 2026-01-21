@@ -117,6 +117,25 @@ Génère un menu journalier basé sur le budget portions.
 }
 ```
 
+### `POST /api/generate-monthly-menu`
+Génère un menu mensuel (par défaut 30 jours) basé sur le budget portions.
+
+**Body:**
+```json
+{
+  "portionBudget": {
+    "starch": 9,
+    "fruit": 4,
+    "milk": 3,
+    "veg": 5,
+    "protein": 6,
+    "fat": 6
+  },
+  "preferredRegion": "senegal",
+  "days": 30
+}
+```
+
 **Régions supportées:**
 `general`, `senegal`, `mali`, `benin`, `togo`, `ghana`, `cote_ivoire`, `cameroun`, `guinea`, `burkina`, `niger`, `congo`, `nigeria`
 

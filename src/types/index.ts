@@ -90,6 +90,17 @@ export interface WeeklyMenuSummary {
   daysGenerated: number;
 }
 
+// Types pour le menu mensuel
+export type DayOfMonth = number; // Validé côté schéma (1-31)
+
+export type MonthlyMenu = Record<DayOfMonth, DailyMenu>;
+
+export interface MonthlyMenuSummary {
+  totalPortionsPerDay: PortionBudget;
+  totalFoodsPerDay: number;
+  daysGenerated: number;
+}
+
 // Types pour les réponses API
 export interface CalorieResult {
   bmr: number; // Métabolisme de base
