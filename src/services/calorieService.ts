@@ -1,5 +1,5 @@
 import type { ActivityLevel, CalorieResult, Goal, UserInput, WeightChangeRate } from "../types/index.js";
-import { RATE_DAILY_ADJUSTMENT } from "../types/index.js";
+import { RATE_DAILY_ADJUSTMENT, MIN_CALORIES } from "../types/index.js";
 import { getPortionBudget } from "../constants/portionRules.js";
 
 /**
@@ -78,12 +78,19 @@ export const calculateCalories = (input: UserInput): CalorieResult => {
 
   // 3. Application de l'ajustement selon l'objectif ET le rythme choisi
   const adjustment = getCalorieAdjustment(goal, rate);
-  const targetCalories = tdee + adjustment;
+  let targetCalories = tdee + adjustment;
 
-  // 4. Arrondi à la centaine la plus proche (CRITIQUE)
+  // 4. Appliquer la limite minimale selon le genre
+  // Femme: min 1200 kcal, Homme: min 1500 kcal
+  const minCalories = MIN_CALORIES[gender];
+  if (targetCalories < minCalories) {
+    targetCalories = minCalories;
+  }
+
+  // 5. Arrondi à la centaine la plus proche (CRITIQUE)
   const roundedCalories = roundToNearestHundred(targetCalories);
 
-  // 5. Lookup du budget portions (PAS de calcul, utilise la table)
+  // 6. Lookup du budget portions (PAS de calcul, utilise la table)
   const portionBudget = getPortionBudget(roundedCalories);
 
   return {

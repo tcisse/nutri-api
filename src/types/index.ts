@@ -1,27 +1,26 @@
-// Types pour l'utilisateur et les calculs
 export type Gender = "male" | "female";
 
 export type ActivityLevel =
-  | "sedentary" // Sédentaire (peu ou pas d'exercice)
-  | "light" // Légèrement actif (exercice léger 1-3 jours/semaine)
-  | "moderate" // Modérément actif (exercice modéré 3-5 jours/semaine)
-  | "active" // Très actif (exercice intense 6-7 jours/semaine)
-  | "extra_active"; // Extrêmement actif (exercice très intense, travail physique)
+  | "sedentary"
+  | "light"
+  | "moderate"
+  | "active"
+  | "extra_active";
 
 export type Goal = "lose" | "maintain" | "gain";
 
-// Rythme de perte/prise de poids (kg par semaine)
 export type WeightChangeRate = "0.5" | "1" | "1.5" | "2";
 
-// 1 kg de graisse ≈ 7700 kcal
-export const KCAL_PER_KG = 7700;
-
-// Déficit/surplus journalier par rythme
 export const RATE_DAILY_ADJUSTMENT: Record<WeightChangeRate, number> = {
-  "0.5": Math.round((0.5 * 7700) / 7), // ~550 kcal/jour
-  "1": Math.round((1 * 7700) / 7),     // ~1100 kcal/jour
-  "1.5": Math.round((1.5 * 7700) / 7), // ~1650 kcal/jour
-  "2": Math.round((2 * 7700) / 7),     // ~2200 kcal/jour
+  "0.5": 500, 
+  "1": 1000,   
+  "1.5": 1500, 
+  "2": 2000,   
+};
+
+export const MIN_CALORIES: Record<"male" | "female", number> = {
+  male: 1500,
+  female: 1200,
 };
 
 export interface UserInput {
@@ -31,10 +30,9 @@ export interface UserInput {
   gender: Gender;
   activity: ActivityLevel;
   goal: Goal;
-  rate?: WeightChangeRate; // Rythme de perte/prise (requis si goal != maintain)
+  rate?: WeightChangeRate;
 }
 
-// Types pour les portions et groupes alimentaires
 export type FoodGroup = "starch" | "fruit" | "milk" | "veg" | "protein" | "fat";
 
 export interface PortionBudget {
