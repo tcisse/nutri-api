@@ -12,18 +12,26 @@ const PORT = process.env.PORT || 3001;
 
 // Configuration CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+  ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
   : ["http://localhost:3000", "http://localhost:3001", "https://nutrition.goshop.africa"];
+
+console.log("🔒 CORS - Origines autorisées:", allowedOrigins);
 
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log("✅ CORS - Requête sans origin (Postman/mobile) - autorisée");
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS - Origin autorisée: ${origin}`);
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      console.log(`❌ CORS - Origin refusée: ${origin}`);
+      console.log(`   Origines autorisées:`, allowedOrigins);
+      callback(null, false);
     }
   },
   credentials: true,
