@@ -7,6 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "deploy": "npx prisma migrate deploy && npm start",
+    "deploy:first": "npx prisma migrate deploy && npx prisma db seed && npm start",
+    "postinstall": "npx prisma generate",
     "lint": "eslint src --ext .ts",
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate",
@@ -40,5 +43,8 @@
     "@types/node": "^22.5.4",
     "tsx": "^4.19.0",
     "typescript": "^5.5.4"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

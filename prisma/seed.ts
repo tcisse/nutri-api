@@ -6,17 +6,26 @@ const prisma = new PrismaClient();
 async function main() {
   const hashedPassword = await bcrypt.hash("admin123", 10);
 
-  const admin = await prisma.admin.upsert({
+  // Check if admin already exists
+  const existingAdmin = await prisma.admin.findUnique({
     where: { email: "admin@goshop.com" },
-    update: {},
-    create: {
+  });
+
+  if (existingAdmin) {
+    console.log("✓ Admin existe déjà:", existingAdmin.email);
+    return;
+  }
+
+  // Create admin
+  const admin = await prisma.admin.create({
+    data: {
       email: "admin@goshop.com",
       password: hashedPassword,
       name: "Admin GoShop",
     },
   });
 
-  console.log("Admin créé:", admin.email);
+  console.log("✓ Admin créé:", admin.email);
 }
 
 main()
