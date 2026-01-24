@@ -4,28 +4,25 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("admin123", 10);
+  // Utiliser le mot de passe depuis l'environnement ou un par défaut
+  const adminPassword = process.env.ADMIN_PASSWORD || "AdminGo21@";
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-  // Check if admin already exists
-  const existingAdmin = await prisma.admin.findUnique({
+  // Upsert admin (créer ou mettre à jour)
+  const admin = await prisma.admin.upsert({
     where: { email: "admin@goshop.com" },
-  });
-
-  if (existingAdmin) {
-    console.log("✓ Admin existe déjà:", existingAdmin.email);
-    return;
-  }
-
-  // Create admin
-  const admin = await prisma.admin.create({
-    data: {
+    update: {
+      password: hashedPassword, // Met à jour le mot de passe si l'admin existe
+    },
+    create: {
       email: "admin@goshop.com",
       password: hashedPassword,
       name: "Admin GoShop",
     },
   });
 
-  console.log("✓ Admin créé:", admin.email);
+  console.log("✓ Admin configuré:", admin.email);
+  console.log("✓ Mot de passe:", adminPassword === "AdminGo21@" ? "AdminGo21@" : "depuis ADMIN_PASSWORD");
 }
 
 main()
