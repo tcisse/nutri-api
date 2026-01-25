@@ -9,6 +9,7 @@ import {
   infoHandler,
 } from "../controllers/nutritionController.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
+import { requireLicense } from "../middlewares/licenseMiddleware.js";
 import {
   userInputSchema,
   generateMenuSchema,
@@ -59,7 +60,7 @@ router.post("/calculate", validateRequest(userInputSchema), calculateHandler);
  *   "preferredRegion": "senegal" // optionnel
  * }
  */
-router.post("/generate-menu", validateRequest(generateMenuSchema), generateMenuHandler);
+router.post("/generate-menu", requireLicense, validateRequest(generateMenuSchema), generateMenuHandler);
 
 /**
  * POST /api/generate-weekly-menu
@@ -78,13 +79,13 @@ router.post("/generate-menu", validateRequest(generateMenuSchema), generateMenuH
  *   "preferredRegion": "senegal" // optionnel
  * }
  */
-router.post("/generate-weekly-menu", validateRequest(generateWeeklyMenuSchema), generateWeeklyMenuHandler);
+router.post("/generate-weekly-menu", requireLicense, validateRequest(generateWeeklyMenuSchema), generateWeeklyMenuHandler);
 
 /**
  * POST /api/generate-monthly-menu
  * Génère un menu mensuel (jusqu'à 31 jours) basé sur le budget portions
  */
-router.post("/generate-monthly-menu", validateRequest(generateMonthlyMenuSchema), generateMonthlyMenuHandler);
+router.post("/generate-monthly-menu", requireLicense, validateRequest(generateMonthlyMenuSchema), generateMonthlyMenuHandler);
 
 /**
  * POST /api/regenerate-day
@@ -104,12 +105,12 @@ router.post("/generate-monthly-menu", validateRequest(generateMonthlyMenuSchema)
  *   "preferredRegion": "senegal" // optionnel
  * }
  */
-router.post("/regenerate-day", validateRequest(regenerateDaySchema), regenerateDayHandler);
+router.post("/regenerate-day", requireLicense, validateRequest(regenerateDaySchema), regenerateDayHandler);
 
 /**
  * POST /api/regenerate-month-day
  * Régénère un jour spécifique du menu mensuel
  */
-router.post("/regenerate-month-day", validateRequest(regenerateMonthDaySchema), regenerateMonthDayHandler);
+router.post("/regenerate-month-day", requireLicense, validateRequest(regenerateMonthDaySchema), regenerateMonthDayHandler);
 
 export default router;

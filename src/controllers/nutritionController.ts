@@ -8,6 +8,7 @@ import type {
   RegenerateMonthDaySchema,
 } from "../schemas/index.js";
 import type { ApiResponse, CalorieResult, DayOfMonth, DayOfWeek } from "../types/index.js";
+import type { LicenseRequest } from "../middlewares/licenseMiddleware.js";
 import { calculateCalories, getActivityDescription, getGoalDescription } from "../services/calorieService.js";
 import {
   generateDailyMenu,
@@ -22,6 +23,7 @@ import {
   calculateMonthlyMenuSummary,
   regenerateMonthDay,
 } from "../services/menuService.js";
+import { consumeMenuQuota } from "../services/licenseService.js";
 
 /**
  * Controller pour le calcul calorique
@@ -61,7 +63,7 @@ export const calculateHandler = async (
  * POST /api/generate-menu
  */
 export const generateMenuHandler = async (
-  req: Request<object, object, GenerateMenuSchema>,
+  req: LicenseRequest,
   res: Response<ApiResponse<object>>,
   next: NextFunction
 ): Promise<void> => {
@@ -76,6 +78,11 @@ export const generateMenuHandler = async (
 
     // Calcul du résumé
     const summary = calculateMenuSummary(menu);
+
+    // Consume menu quota after successful generation (only for QUOTA licenses)
+    if (req.userId) {
+      await consumeMenuQuota(req.userId);
+    }
 
     res.status(200).json({
       success: true,
@@ -95,7 +102,7 @@ export const generateMenuHandler = async (
  * POST /api/generate-weekly-menu
  */
 export const generateWeeklyMenuHandler = async (
-  req: Request<object, object, GenerateWeeklyMenuSchema>,
+  req: LicenseRequest,
   res: Response<ApiResponse<object>>,
   next: NextFunction
 ): Promise<void> => {
@@ -110,6 +117,11 @@ export const generateWeeklyMenuHandler = async (
 
     // Calcul du résumé
     const summary = calculateWeeklyMenuSummary(weeklyMenu, portionBudget);
+
+    // Consume menu quota after successful generation (only for QUOTA licenses)
+    if (req.userId) {
+      await consumeMenuQuota(req.userId);
+    }
 
     res.status(200).json({
       success: true,
@@ -129,7 +141,7 @@ export const generateWeeklyMenuHandler = async (
  * POST /api/generate-monthly-menu
  */
 export const generateMonthlyMenuHandler = async (
-  req: Request<object, object, GenerateMonthlyMenuSchema>,
+  req: LicenseRequest,
   res: Response<ApiResponse<object>>,
   next: NextFunction
 ): Promise<void> => {
@@ -139,6 +151,11 @@ export const generateMonthlyMenuHandler = async (
     const monthlyMenu = generateMonthlyMenu(portionBudget, preferredRegion, days);
     const formattedMenu = formatMonthlyMenuForDisplay(monthlyMenu);
     const summary = calculateMonthlyMenuSummary(monthlyMenu, portionBudget);
+
+    // Consume menu quota after successful generation (only for QUOTA licenses)
+    if (req.userId) {
+      await consumeMenuQuota(req.userId);
+    }
 
     res.status(200).json({
       success: true,

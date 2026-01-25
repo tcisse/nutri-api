@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  firstName String
-  lastName  String
-  password  String
-  role      String   @default("user")
-  gender    String
-  height    Float
-  country   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  sessions  Session[]
+  id                String             @id @default(cuid())
+  email             String             @unique
+  firstName         String
+  lastName          String
+  password          String
+  role              String             @default("user")
+  gender            String
+  height            Float
+  country           String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  sessions          Session[]
+  licenseActivation LicenseActivation?
 }
 
 model Session {
@@ -35,7 +36,7 @@ model Session {
   bmr            Float
   tdee           Float
   targetCalories Float
-  portionBudget  String   // JSON stringified PortionBudget
+  portionBudget  String   @db.Text // JSON stringified PortionBudget
   createdAt      DateTime @default(now())
   menu           Menu?
 }
@@ -44,7 +45,7 @@ model Menu {
   id        String   @id @default(cuid())
   sessionId String   @unique
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  data      String   // JSON stringified menu data
+  data      String   @db.LongText // JSON stringified menu data
   createdAt DateTime @default(now())
 }
 
@@ -54,4 +55,43 @@ model Admin {
   password  String
   name      String
   createdAt DateTime @default(now())
+}
+
+model License {
+  id            String              @id @default(cuid())
+  code          String              @unique
+  type          String              // "QUOTA" or "SUBSCRIPTION"
+  name          String
+  description   String?
+  menuQuota     Int?                // For QUOTA type
+  durationDays  Int?                // For SUBSCRIPTION type
+  isActive      Boolean             @default(true)
+  createdBy     String              // Admin ID who created it
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  activations   LicenseActivation[]
+
+  @@index([code])
+  @@index([type])
+  @@index([isActive])
+}
+
+model LicenseActivation {
+  id                String    @id @default(cuid())
+  licenseId         String
+  license           License   @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activatedAt       DateTime  @default(now())
+  expiresAt         DateTime? // For subscription types
+  menusGenerated    Int       @default(0)
+  menusRemaining    Int?      // For quota types
+  isActive          Boolean   @default(true)
+  deactivatedAt     DateTime?
+  deactivatedReason String?
+
+  @@index([userId])
+  @@index([licenseId])
+  @@index([isActive])
+  @@index([expiresAt])
 }
