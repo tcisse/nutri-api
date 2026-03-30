@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
 import { generateUniqueLicenseCode } from "../lib/licenseCodeGenerator.js";
+import { isChariowKey, validateChariowLicense } from "../lib/chariowClient.js";
 
 export interface CreateLicenseData {
   type: "QUOTA" | "SUBSCRIPTION";
@@ -146,6 +147,14 @@ export const activateLicense = async (userId: string, code: string) => {
 
   if (!license.isActive) {
     throw new Error("Cette licence a été désactivée");
+  }
+
+  // Double validation Chariow pour les clés au format Chariow
+  if (isChariowKey(code)) {
+    const chariowCheck = await validateChariowLicense(code);
+    if (!chariowCheck.isValid) {
+      throw new Error(chariowCheck.reason || "Licence invalide selon Chariow");
+    }
   }
 
   // Check if user already has an active license
