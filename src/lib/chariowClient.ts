@@ -37,15 +37,26 @@ export async function validateChariowLicense(
       }
     );
 
-    if (!response.ok) {
-      return { isValid: false, reason: "Clé de licence invalide sur Chariow" };
+    // Si la licence n'est pas trouvée sur Chariow, on fait confiance à la DB interne
+    // (cas des licences créées avant la mise en place du Pulse ou des licences admin)
+    if (response.status === 404) {
+      return { isValid: true };
     }
 
-    const json = await response.json() as { data: { is_active: boolean; is_expired: boolean } };
+    if (!response.ok) {
+      // Autre erreur API → fail open pour ne pas bloquer l'utilisateur
+      return { isValid: true };
+    }
+
+    const json = await response.json() as {
+      data: { is_expired: boolean; revoked_at: string | null };
+    };
     const data = json.data;
 
-    if (!data.is_active) {
-      return { isValid: false, reason: "Cette licence n'est plus active" };
+    // Rejeter uniquement si explicitement révoquée ou expirée
+    // (ne pas vérifier is_active : une licence peut être en état pending_activation)
+    if (data.revoked_at !== null) {
+      return { isValid: false, reason: "Cette licence a été révoquée" };
     }
 
     if (data.is_expired) {
