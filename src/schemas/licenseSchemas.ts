@@ -50,8 +50,8 @@ export const activateLicenseSchema = z.object({
     .string()
     .min(1, "Le code de licence est requis")
     .regex(
-      /^NUTRI-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/,
-      "Le code de licence doit être au format NUTRI-XXXX-XXXX-XXXX"
+      /^(NUTRI-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}|[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})$/i,
+      "Code de licence invalide"
     ),
 });
 
