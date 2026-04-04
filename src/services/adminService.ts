@@ -54,12 +54,7 @@ export const getAllUsers = async (page: number = 1, limit: number = 20, search?:
       const { password: _, sessions, ...userData } = u;
       return {
         ...userData,
-        lastSession: sessions[0]
-          ? {
-              ...sessions[0],
-              portionBudget: JSON.parse(sessions[0].portionBudget),
-            }
-          : null,
+        lastSession: sessions[0] ? sessions[0] : null,
       };
     }),
     total,

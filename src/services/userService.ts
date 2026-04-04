@@ -1,8 +1,6 @@
 import prisma from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
 import type { CreateUserSchema, CreateSessionSchema } from "../schemas/userSchemas.js";
-import { calculateCalories } from "./calorieService.js";
-import type { UserInput } from "../types/index.js";
 
 export const createUser = async (data: CreateUserSchema) => {
   const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -52,22 +50,8 @@ export const createSession = async (userId: string, data: CreateSessionSchema) =
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("Utilisateur non trouvé");
 
-  // Count existing sessions to determine month number
   const sessionCount = await prisma.session.count({ where: { userId } });
   const month = sessionCount + 1;
-
-  // Calculate calories using the existing service
-  const userInput: UserInput = {
-    age: data.age,
-    weight: data.weight,
-    height: user.height,
-    gender: user.gender as "male" | "female",
-    activity: data.activityLevel as UserInput["activity"],
-    goal: data.goal as UserInput["goal"],
-    rate: data.rate as UserInput["rate"],
-  };
-
-  const calorieResult = calculateCalories(userInput);
 
   return prisma.session.create({
     data: {
@@ -78,10 +62,6 @@ export const createSession = async (userId: string, data: CreateSessionSchema) =
       activityLevel: data.activityLevel,
       goal: data.goal,
       rate: data.rate || null,
-      bmr: calorieResult.bmr,
-      tdee: calorieResult.tdee,
-      targetCalories: calorieResult.targetCalories,
-      portionBudget: JSON.stringify(calorieResult.portionBudget),
     },
     include: { menu: true },
   });

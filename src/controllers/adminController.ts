@@ -103,7 +103,6 @@ export const getUserDetailHandler = async (
         ...user,
         sessions: user.sessions.map((s) => ({
           ...s,
-          portionBudget: JSON.parse(s.portionBudget),
           menu: s.menu ? { ...s.menu, data: JSON.parse(s.menu.data) } : null,
         })),
       },
@@ -126,7 +125,6 @@ export const getUserSessionsAdminHandler = async (
       success: true,
       data: sessions.map((s) => ({
         ...s,
-        portionBudget: JSON.parse(s.portionBudget),
         menu: s.menu ? { ...s.menu, data: JSON.parse(s.menu.data) } : null,
       })),
     });
