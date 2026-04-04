@@ -1,6 +1,6 @@
 import prisma from "../lib/prisma.js";
 import { generateUniqueLicenseCode } from "../lib/licenseCodeGenerator.js";
-import { isChariowKey, validateChariowLicense } from "../lib/chariowClient.js";
+import { isChariowKey, activateChariowLicense } from "../lib/chariowClient.js";
 
 export interface CreateLicenseData {
   type: "QUOTA" | "SUBSCRIPTION";
@@ -149,14 +149,6 @@ export const activateLicense = async (userId: string, code: string) => {
     throw new Error("Cette licence a été désactivée");
   }
 
-  // Double validation Chariow pour les clés au format Chariow
-  if (isChariowKey(code)) {
-    const chariowCheck = await validateChariowLicense(code);
-    if (!chariowCheck.isValid) {
-      throw new Error(chariowCheck.reason || "Licence invalide selon Chariow");
-    }
-  }
-
   // Check if user already has an active license
   const existingActivation = await prisma.licenseActivation.findUnique({
     where: { userId },
@@ -167,14 +159,30 @@ export const activateLicense = async (userId: string, code: string) => {
     throw new Error("Vous avez déjà une licence active");
   }
 
-  // Calculate expiration for subscription type
+  // Activation Chariow pour les clés au format Chariow
+  // Appelle POST /activate pour enregistrer l'usage côté Chariow
+  let chariowExpiresAt: Date | null | undefined = undefined;
+  if (isChariowKey(code)) {
+    const chariowResult = await activateChariowLicense(code, userId);
+    if (!chariowResult.isValid) {
+      throw new Error(chariowResult.reason || "Licence invalide selon Chariow");
+    }
+    chariowExpiresAt = chariowResult.expiresAt;
+  }
+
+  // Calculate expiration — prioritise Chariow's expires_at if provided
   let expiresAt: Date | null = null;
   let menusRemaining: number | null = null;
 
-  if (license.type === "SUBSCRIPTION" && license.durationDays) {
+  if (chariowExpiresAt !== undefined) {
+    // Chariow a fourni une date d'expiration (ou null si pas d'expiration)
+    expiresAt = chariowExpiresAt;
+  } else if (license.type === "SUBSCRIPTION" && license.durationDays) {
     expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + license.durationDays);
-  } else if (license.type === "QUOTA" && license.menuQuota) {
+  }
+
+  if (license.type === "QUOTA" && license.menuQuota) {
     menusRemaining = license.menuQuota;
   }
 

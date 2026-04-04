@@ -76,10 +76,7 @@ export const createSessionHandler = async (
 
     res.status(201).json({
       success: true,
-      data: {
-        ...session,
-        portionBudget: JSON.parse(session.portionBudget),
-      },
+      data: session,
     });
   } catch (error) {
     next(error);
@@ -99,7 +96,6 @@ export const getUserSessionsHandler = async (
       success: true,
       data: sessions.map((s) => ({
         ...s,
-        portionBudget: JSON.parse(s.portionBudget),
         menu: s.menu ? { ...s.menu, data: JSON.parse(s.menu.data) } : null,
       })),
     });
@@ -126,7 +122,6 @@ export const getLatestSessionHandler = async (
       success: true,
       data: {
         ...session,
-        portionBudget: JSON.parse(session.portionBudget),
         menu: session.menu ? { ...session.menu, data: JSON.parse(session.menu.data) } : null,
       },
     });
