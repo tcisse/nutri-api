@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createUserHandler,
   loginUserHandler,
+  getMeHandler,
   updateUserHandler,
   createSessionHandler,
   getUserSessionsHandler,
@@ -19,6 +20,9 @@ router.post("/", validateRequest(createUserSchema), createUserHandler);
 
 // POST /api/users/login - Login
 router.post("/login", validateRequest(loginUserSchema), loginUserHandler);
+
+// GET /api/users/me - Get current user from JWT
+router.get("/me", getMeHandler);
 
 // GET /api/users/sessions/:sessionId/menu - Get saved menu (AVANT les routes /:id)
 router.get("/sessions/:sessionId/menu", getMenuHandler);

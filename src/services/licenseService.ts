@@ -135,21 +135,9 @@ export const deactivateLicense = async (
  * Activate a license for a user
  */
 export const activateLicense = async (userId: string, code: string) => {
-  // Find the license by code (case-insensitive)
-  const license = await prisma.license.findUnique({
-    where: { code: code.toUpperCase() },
-    include: { activations: true },
-  });
+  const normalizedCode = code.toUpperCase();
 
-  if (!license) {
-    throw new Error("Code de licence invalide");
-  }
-
-  if (!license.isActive) {
-    throw new Error("Cette licence a été désactivée");
-  }
-
-  // Check if user already has an active license
+  // Check if user already has an active license (avant tout traitement)
   const existingActivation = await prisma.licenseActivation.findUnique({
     where: { userId },
     include: { license: true },
@@ -159,23 +147,50 @@ export const activateLicense = async (userId: string, code: string) => {
     throw new Error("Vous avez déjà une licence active");
   }
 
-  // Activation Chariow pour les clés au format Chariow
-  // Appelle POST /activate pour enregistrer l'usage côté Chariow
+  let license: { id: string; type: string; menuQuota: number | null; durationDays: number | null };
   let chariowExpiresAt: Date | null | undefined = undefined;
-  if (isChariowKey(code)) {
-    const chariowResult = await activateChariowLicense(code, userId);
+
+  if (isChariowKey(normalizedCode)) {
+    // ── Clé Chariow (XXXX-XXXX-XXXX-XXXX) ──────────────────────────────
+    // 1. Valider/activer côté Chariow
+    const chariowResult = await activateChariowLicense(normalizedCode, userId);
     if (!chariowResult.isValid) {
       throw new Error(chariowResult.reason || "Licence invalide selon Chariow");
     }
     chariowExpiresAt = chariowResult.expiresAt;
+
+    // 2. Créer ou retrouver l'enregistrement License local pour cette clé
+    license = await prisma.license.upsert({
+      where: { code: normalizedCode },
+      update: {},
+      create: {
+        code: normalizedCode,
+        type: "SUBSCRIPTION",
+        name: `Licence Chariow`,
+        isActive: true,
+        createdBy: "chariow",
+      },
+    });
+  } else {
+    // ── Clé interne (NUTRI-XXXX-XXXX-XXXX) ──────────────────────────────
+    const found = await prisma.license.findUnique({
+      where: { code: normalizedCode },
+    });
+
+    if (!found) {
+      throw new Error("Code de licence invalide");
+    }
+    if (!found.isActive) {
+      throw new Error("Cette licence a été désactivée");
+    }
+    license = found;
   }
 
-  // Calculate expiration — prioritise Chariow's expires_at if provided
+  // Calculate expiration
   let expiresAt: Date | null = null;
   let menusRemaining: number | null = null;
 
   if (chariowExpiresAt !== undefined) {
-    // Chariow a fourni une date d'expiration (ou null si pas d'expiration)
     expiresAt = chariowExpiresAt;
   } else if (license.type === "SUBSCRIPTION" && license.durationDays) {
     expiresAt = new Date();
@@ -186,9 +201,8 @@ export const activateLicense = async (userId: string, code: string) => {
     menusRemaining = license.menuQuota;
   }
 
-  // Create or update activation
+  // Create or reactivate activation
   if (existingActivation) {
-    // Update existing inactive activation
     return prisma.licenseActivation.update({
       where: { id: existingActivation.id },
       data: {
@@ -204,7 +218,6 @@ export const activateLicense = async (userId: string, code: string) => {
       include: { license: true },
     });
   } else {
-    // Create new activation
     return prisma.licenseActivation.create({
       data: {
         licenseId: license.id,
