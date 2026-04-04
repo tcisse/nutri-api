@@ -86,22 +86,37 @@ export const getStats = async () => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [totalUsers, activeThisMonth, usersByCountry, usersByGoal, totalMenus] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.session.count({
-        where: { createdAt: { gte: startOfMonth } },
-      }),
-      prisma.user.groupBy({
-        by: ["country"],
-        _count: { country: true },
-      }),
-      prisma.session.groupBy({
-        by: ["goal"],
-        _count: { goal: true },
-      }),
-      prisma.menu.count(),
-    ]);
+  type DayRow = { date: string; count: bigint };
+
+  const [
+    totalUsers,
+    activeThisMonth,
+    usersByCountry,
+    usersByGoal,
+    totalMenus,
+    usersOverTimeRaw,
+    menusOverTimeRaw,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.session.count({ where: { createdAt: { gte: startOfMonth } } }),
+    prisma.user.groupBy({ by: ["country"], _count: { country: true } }),
+    prisma.session.groupBy({ by: ["goal"], _count: { goal: true } }),
+    prisma.menu.count(),
+    prisma.$queryRaw<DayRow[]>`
+      SELECT DATE_FORMAT(createdAt, '%Y-%m-%d') as date, COUNT(*) as count
+      FROM User
+      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+      ORDER BY date ASC
+    `,
+    prisma.$queryRaw<DayRow[]>`
+      SELECT DATE_FORMAT(createdAt, '%Y-%m-%d') as date, COUNT(*) as count
+      FROM Menu
+      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+      ORDER BY date ASC
+    `,
+  ]);
 
   return {
     totalUsers,
@@ -114,6 +129,14 @@ export const getStats = async () => {
     usersByGoal: usersByGoal.map((g) => ({
       goal: g.goal,
       count: g._count.goal,
+    })),
+    usersOverTime: usersOverTimeRaw.map((r) => ({
+      date: r.date,
+      count: Number(r.count),
+    })),
+    menusOverTime: menusOverTimeRaw.map((r) => ({
+      date: r.date,
+      count: Number(r.count),
     })),
   };
 };
