@@ -39,6 +39,19 @@ export const loginUser = async (email: string, password: string) => {
   return userData;
 };
 
+export const getUserById = async (id: string) => {
+  return prisma.user.findUnique({
+    where: { id },
+    include: {
+      sessions: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: { menu: true },
+      },
+    },
+  });
+};
+
 export const updateUser = async (id: string, data: Partial<CreateUserSchema>) => {
   return prisma.user.update({
     where: { id },

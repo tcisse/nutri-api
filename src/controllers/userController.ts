@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import {
   createUser,
   loginUser,
+  getUserById,
   updateUser,
   createSession,
   getUserSessions,
@@ -149,6 +150,35 @@ export const getMenuHandler = async (
       data: { ...menu, data: JSON.parse(menu.data) },
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getMeHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(" ")[1];
+    if (!token) {
+      res.status(401).json({ success: false, error: "Token manquant" });
+      return;
+    }
+    const { userId } = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(404).json({ success: false, error: "Utilisateur non trouvé" });
+      return;
+    }
+    const { password: _, ...userData } = user;
+    res.json({ success: true, data: { user: userData } });
+  } catch (error) {
+    if (error instanceof Error && error.name === "JsonWebTokenError") {
+      res.status(401).json({ success: false, error: "Token invalide" });
+      return;
+    }
     next(error);
   }
 };
